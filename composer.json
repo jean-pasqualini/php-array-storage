@@ -1,0 +1,12 @@
+{
+    "name": "darkilliant/php-array-storage",
+    "require": {
+        "symfony/stopwatch": "^2.7"
+    },
+    "authors": [
+        {
+            "name": "Jean Pasqualini",
+            "email": "jpasqualini75@gmail.com"
+        }
+    ]
+}

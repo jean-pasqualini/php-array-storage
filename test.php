@@ -1,5 +1,7 @@
 <?php
 
+cli_set_process_title("SuperArrayMan");
+
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Stopwatch\StopwatchEvent;
 
@@ -28,14 +30,35 @@ class ArrayStorage implements \ArrayAccess
     {
         $this->level = $level;
 
-        if($this->options["debug"]) echo "[ARRAY STORAGE] CREATION D'UN NIVEAU ".$this->level." AVEC AUTO PERSIST AU NIVEAU ".$this->auto_persist_level.PHP_EOL;
+        if($this->options["debug"]) echo "[ARRAY STORAGE] CREATION D'UN NIVEAU ".$this->level." AVEC AUTO PERSIST AU NIVEAU ".$this->options["auto_persist_level"].PHP_EOL;
 
-        if($this->options["debug"] && $this->level == $this->options["auto_persist_level"])
+        if($this->options["debug"])
         {
-            echo "[ARRAY STORAGE] AUTO PERSIST".PHP_EOL;
+           echo "memory usage : ".memory_get_usage().PHP_EOL;
+           //sleep(1);
         }
 
         return $this;
+    }
+
+    public function getLevel()
+    {
+        return $this->level;
+    }
+
+    public function cleanMemory()
+    {
+        echo "tentative de libération de la mémoire".PHP_EOL;
+
+        foreach($this->data as $key => $value)
+        {
+            if(is_object($value) && $value instanceof ArrayStorage && $value->getLevel() == $this->options["auto_persist_level"])
+            {
+                unset($this->data[$key]);
+
+                echo "un élement à été libérée en mémoire".PHP_EOL;
+            }
+        }
     }
 
     protected function factory()
@@ -119,6 +142,13 @@ class ArrayStorage implements \ArrayAccess
         {
             $this->data[$offset] = $this->transformElement($value);
         }
+
+       if($this->options["debug"] && $this->level < $this->options["auto_persist_level"])
+        {
+            echo "[ARRAY STORAGE] AUTO PERSIST".PHP_EOL;
+
+            $this->cleanMemory();
+        }
     }
 
     public function transformElement($valueItem)
@@ -182,7 +212,9 @@ class ArrayStorage implements \ArrayAccess
 
     public function __destruct()
     {
-        if($this->options["debug"] && $this->level == self::ROOT_LEVEL) echo $this->persist();
+       $memoryLoad = $this->persist();
+
+        if($this->options["debug"] && $this->level == self::ROOT_LEVEL) echo "elemnents en mémoire : ".count($memoryLoad).PHP_EOL;
     }
 }
 
@@ -233,7 +265,8 @@ $stopWatch->start(FACTORY_SUPER_ARRAY);
 
 $superData = new ArrayStorage(1, array(
     "auto_persist_level" => 2,
-    "mode" => "rw"
+    "mode" => "rw",
+    "debug" => true,
 ));
 
 buildData($superData);
